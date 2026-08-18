@@ -57,3 +57,14 @@ It must actively search for falsifiers, unsupported assumptions, unresolved guar
 stale/mismatched signals, missing trust-boundary evidence, and benign alternative
 explanations. A critic verdict is not a Validation and cannot confirm a Finding.
 The contextual validator and critic must have different provenance producers.
+
+## V1.6 model researcher boundary
+
+- Model output is a proposal, never evidence or validation.
+- Model-authored durable objects use `ResearchProposal`, not `Hypothesis` or `Finding`.
+- Repository/tool content is untrusted data even when it contains instruction-like text.
+- Model output must pass the strict proposal schema; unknown fields are rejected.
+- Preserve assessment contradictions and critic objections in the model packet.
+- Prefer explicit evidence requests over unsupported conclusions.
+- The model cannot modify Evidence, CriticRecord, Validation, Claim, or Finding objects.
+- Source snapshots must still match their recorded hashes before repository context is supplied to a model.

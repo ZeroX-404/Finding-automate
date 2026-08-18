@@ -56,6 +56,7 @@ class EdgeRelation(StrEnum):
     REMEDIATES = "REMEDIATES"
     BEARS_ON = "BEARS_ON"
     ASSESSES = "ASSESSES"
+    PROPOSES_FOR = "PROPOSES_FOR"
 
 
 class SourceType(StrEnum):
@@ -104,6 +105,23 @@ class CriticVerdict(StrEnum):
     CHALLENGES = "CHALLENGES"
     REJECTS = "REJECTS"
     INCONCLUSIVE = "INCONCLUSIVE"
+
+
+class ProposalKind(StrEnum):
+    HYPOTHESIS_REFINEMENT = "HYPOTHESIS_REFINEMENT"
+    EVIDENCE_REQUEST = "EVIDENCE_REQUEST"
+
+
+class ProposalDisposition(StrEnum):
+    CONTINUE = "CONTINUE"
+    SEEK_EVIDENCE = "SEEK_EVIDENCE"
+    DEPRIORITIZE = "DEPRIORITIZE"
+
+
+class ProposalStatus(StrEnum):
+    PROPOSED = "PROPOSED"
+    REJECTED = "REJECTED"
+    ACCEPTED = "ACCEPTED"
 
 
 class Provenance(BaseModel):
@@ -216,6 +234,26 @@ class CriticRecord(BaseModel):
     missing_evidence: list[str] = Field(default_factory=list)
     alternative_explanations: list[str] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
+    provenance: Provenance
+
+
+class ResearchProposal(BaseModel):
+    id: str = Field(default_factory=lambda: new_id("PRP"))
+    subject_id: str
+    assessment_id: str
+    critic_id: str
+    method_id: str
+    proposal_kind: ProposalKind
+    disposition: ProposalDisposition
+    status: ProposalStatus = ProposalStatus.PROPOSED
+    statement: str
+    falsifier: str
+    prediction: str
+    requested_evidence: list[str] = Field(default_factory=list)
+    assumptions: list[str] = Field(default_factory=list)
+    model_output_hash: str
+    repository_content_treated_as_data: bool = True
+    schema_version: str = "1"
     provenance: Provenance
 
 

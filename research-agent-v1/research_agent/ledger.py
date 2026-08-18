@@ -367,6 +367,7 @@ class Ledger:
                     "hypothesis_id",
                     "subject_id",
                     "assessment_id",
+                    "critic_id",
                 ):
                     value = payload.get(field)
                     if value:
@@ -449,6 +450,84 @@ class Ledger:
                                         "message": f"Critic references evidence outside reviewed assessment: {foreign_evidence}.",
                                     }
                                 )
+
+                if row["kind"] == "ResearchProposal":
+                    subject_id = payload.get("subject_id")
+                    assessment_id = payload.get("assessment_id")
+                    critic_id = payload.get("critic_id")
+                    method_id = payload.get("method_id")
+
+                    subject_row = object_index.get(subject_id)
+                    if subject_row is not None and subject_row["kind"] != "Hypothesis":
+                        issues.append(
+                            {
+                                "code": "PROPOSAL_SUBJECT_NOT_HYPOTHESIS",
+                                "object_id": row["id"],
+                                "message": f"ResearchProposal subject {subject_id} is {subject_row['kind']}, not Hypothesis.",
+                            }
+                        )
+
+                    assessment_row = object_index.get(assessment_id)
+                    if assessment_row is not None and assessment_row["kind"] == "ContextAssessment":
+                        assessment_payload = json.loads(assessment_row["payload_json"])
+                        if assessment_payload.get("hypothesis_id") != subject_id:
+                            issues.append(
+                                {
+                                    "code": "PROPOSAL_ASSESSMENT_SUBJECT_MISMATCH",
+                                    "object_id": row["id"],
+                                    "message": "ResearchProposal assessment targets a different hypothesis.",
+                                }
+                            )
+
+                    critic_row = object_index.get(critic_id)
+                    if critic_row is not None and critic_row["kind"] == "CriticRecord":
+                        critic_payload = json.loads(critic_row["payload_json"])
+                        if critic_payload.get("subject_id") != subject_id:
+                            issues.append(
+                                {
+                                    "code": "PROPOSAL_CRITIC_SUBJECT_MISMATCH",
+                                    "object_id": row["id"],
+                                    "message": "ResearchProposal critic targets a different hypothesis.",
+                                }
+                            )
+                        if critic_payload.get("assessment_id") != assessment_id:
+                            issues.append(
+                                {
+                                    "code": "PROPOSAL_CRITIC_ASSESSMENT_MISMATCH",
+                                    "object_id": row["id"],
+                                    "message": "ResearchProposal critic did not review the referenced assessment.",
+                                }
+                            )
+
+                    method_row = object_index.get(method_id)
+                    if method_row is not None and method_row["kind"] == "Method":
+                        method_payload = json.loads(method_row["payload_json"])
+                        if method_payload.get("kind") != "MODEL_REASONING":
+                            issues.append(
+                                {
+                                    "code": "PROPOSAL_METHOD_NOT_MODEL_REASONING",
+                                    "object_id": row["id"],
+                                    "message": "ResearchProposal method is not MODEL_REASONING.",
+                                }
+                            )
+
+                    provenance = payload.get("provenance") or {}
+                    if not provenance.get("model_id"):
+                        issues.append(
+                            {
+                                "code": "PROPOSAL_MISSING_MODEL_ID",
+                                "object_id": row["id"],
+                                "message": "ResearchProposal provenance has no model_id.",
+                            }
+                        )
+                    if payload.get("repository_content_treated_as_data") is not True:
+                        issues.append(
+                            {
+                                "code": "PROPOSAL_REPOSITORY_BOUNDARY_VIOLATION",
+                                "object_id": row["id"],
+                                "message": "ResearchProposal does not preserve repository-content-as-data boundary.",
+                            }
+                        )
 
                 if row["kind"] == "Finding" and payload.get("state") == ResearchState.CONFIRMED.value:
                     evidence_ids = payload.get("evidence_ids") or []

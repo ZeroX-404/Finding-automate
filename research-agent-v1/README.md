@@ -158,3 +158,53 @@ Review one assessment:
 ```bash
 research-agent criticize-context CAS-xxxxxxxxxxxx --db signal-evidence.db
 ```
+
+## V1.6 ResearchModel interface and proposal boundary
+
+V1.6 introduces the first model-facing research harness, but intentionally ships
+with an offline deterministic `MockResearchModel` only. A model cannot create a
+Hypothesis, Claim, Validation, or Finding. Its durable output is a
+`ResearchProposal` (`PRP-*`) that must pass a strict Pydantic schema.
+
+```text
+validated ledger context
+        ↓
+ResearchPacket
+  trusted_contract
+  +
+  untrusted_repository_data
+        ↓
+ResearchModel
+        ↓
+ModelProposalOutput schema gate
+        ↓
+ResearchProposal
+```
+
+Repository content is explicitly delimited as untrusted data. Prompt-like text in
+comments or source files cannot modify the trusted contract, capabilities, or
+ledger permissions. Extra model fields are rejected instead of silently ignored,
+so a model cannot smuggle fields such as `finding_state=CONFIRMED` through the
+proposal channel.
+
+Run the offline acceptance corpus:
+
+```bash
+rm -f researcher-evidence.db
+research-agent researcher-case --db researcher-evidence.db --repo-commit "$(git rev-parse HEAD)"
+```
+
+Generate one proposal from an existing contextual assessment and critic record:
+
+```bash
+research-agent research-propose \
+  CAS-... \
+  CRT-... \
+  targets/contextual_validator_cases \
+  --db critic-evidence.db \
+  --model mock-v1.6
+```
+
+V1.6 acceptance requires zero `Claim`, `Validation`, or `Finding` objects created
+by the researcher stage, a clean ledger audit, source-snapshot integrity, and a
+preserved repository-content-as-data boundary.
