@@ -208,3 +208,32 @@ research-agent research-propose \
 V1.6 acceptance requires zero `Claim`, `Validation`, or `Finding` objects created
 by the researcher stage, a clean ledger audit, source-snapshot integrity, and a
 preserved repository-content-as-data boundary.
+
+## V1.7 Proposal Promotion Gate
+
+V1.7 adds a deterministic firewall between model-authored `ResearchProposal`
+objects and durable research state.
+
+```text
+ResearchProposal
+      ↓
+Proposal Gate
+      ├─ lineage/provenance
+      ├─ scope + commit freshness
+      ├─ critic/assessment state
+      ├─ duplicate check
+      ├─ unsupported certainty check
+      └─ trust-boundary preservation
+             ↓
+      ACCEPT / REJECT / DEFER
+```
+
+Only `ACCEPT` for a `HYPOTHESIS_REFINEMENT` may create a new `Hypothesis`.
+Evidence requests are always deferred to a future scoped executor. The gate
+never creates `Claim`, `Validation`, or `Finding` objects and never executes
+repository, network, or shell tools.
+
+```bash
+research-agent gate-proposal PRP-... --db evidence.db
+research-agent promotion-case --db promotion-evidence.db
+```

@@ -8,3 +8,5 @@ artifacts/logs/*
 artifacts/reproductions/*
 artifacts/sarif/*
 !artifacts/**/.gitkeep
+
+.research-agent/

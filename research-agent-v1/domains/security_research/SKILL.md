@@ -68,3 +68,12 @@ The contextual validator and critic must have different provenance producers.
 - Prefer explicit evidence requests over unsupported conclusions.
 - The model cannot modify Evidence, CriticRecord, Validation, Claim, or Finding objects.
 - Source snapshots must still match their recorded hashes before repository context is supplied to a model.
+
+## V1.7 proposal-promotion rule
+
+Model-authored `ResearchProposal` objects are immutable proposals, not facts.
+A deterministic `ProposalDecision` must gate them before any derived hypothesis
+is created. Evidence requests are deferred rather than executed by the gate.
+The gate must reject broken provenance, scope mismatch, duplicate hypotheses,
+and unsupported certainty language. It must never create a Claim, Validation,
+or Finding.

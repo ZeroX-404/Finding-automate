@@ -18,6 +18,8 @@ from .critic_case import run_critic_acceptance_case
 from .research_models import MockResearchModel
 from .researcher import ResearcherError, run_model_researcher
 from .researcher_case import run_researcher_acceptance_case
+from .promotion_gate import PromotionGateError, run_proposal_gate
+from .promotion_case import run_promotion_acceptance_case
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -298,6 +300,59 @@ def researcher_case(
             repo_commit=repo_commit,
         )
     except (FileNotFoundError, PermissionError, ResearcherError, RuntimeError, ValueError) as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1)
+    typer.echo(json.dumps(result, indent=2))
+    if (
+        not result["all_expected"]
+        or result["prohibited_objects"]
+        or not result["audit"]["ok"]
+    ):
+        raise typer.Exit(code=1)
+
+@app.command("gate-proposal")
+def gate_proposal(
+    proposal_id: str,
+    db: str = "evidence.db",
+    policy_path: str = str(DEFAULT_POLICY_PATH),
+    repo_commit: str | None = None,
+) -> None:
+    """Deterministically accept, reject, or defer one ResearchProposal."""
+    ledger = Ledger(db)
+    try:
+        policy = ScopePolicy.load(policy_path)
+        result = run_proposal_gate(
+            ledger,
+            proposal_id,
+            policy=policy,
+            repo_commit=repo_commit,
+        )
+    except (FileNotFoundError, PermissionError, PromotionGateError, ValueError) as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1)
+    typer.echo(json.dumps(result, indent=2))
+
+
+@app.command("promotion-case")
+def promotion_case(
+    db: str = "promotion-evidence.db",
+    policy_path: str = str(DEFAULT_POLICY_PATH),
+    repo_commit: str | None = None,
+) -> None:
+    """Run the offline V1.7 proposal-promotion gate acceptance corpus."""
+    repo_root = PROJECT_ROOT / "targets" / "contextual_validator_cases"
+    semgrep_json = repo_root / "signals.json"
+    ledger = Ledger(db)
+    try:
+        policy = ScopePolicy.load(policy_path)
+        result = run_promotion_acceptance_case(
+            ledger,
+            repo_root,
+            semgrep_json,
+            policy=policy,
+            repo_commit=repo_commit,
+        )
+    except (FileNotFoundError, PermissionError, PromotionGateError, RuntimeError, ValueError) as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(code=1)
     typer.echo(json.dumps(result, indent=2))

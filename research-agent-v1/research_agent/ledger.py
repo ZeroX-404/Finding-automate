@@ -528,6 +528,147 @@ class Ledger:
                                 "message": "ResearchProposal does not preserve repository-content-as-data boundary.",
                             }
                         )
+                    if not provenance.get("input_hash") or not provenance.get("output_hash"):
+                        issues.append(
+                            {
+                                "code": "PROPOSAL_INCOMPLETE_HASH_PROVENANCE",
+                                "object_id": row["id"],
+                                "message": "ResearchProposal provenance must retain both input_hash and output_hash.",
+                            }
+                        )
+                    if payload.get("model_output_hash") != provenance.get("output_hash"):
+                        issues.append(
+                            {
+                                "code": "PROPOSAL_MODEL_OUTPUT_HASH_MISMATCH",
+                                "object_id": row["id"],
+                                "message": "ResearchProposal model_output_hash does not match provenance.output_hash.",
+                            }
+                        )
+                    expected_parents = {subject_id, assessment_id, critic_id, method_id}
+                    actual_parents = set(provenance.get("parent_ids") or [])
+                    if not expected_parents.issubset(actual_parents):
+                        issues.append(
+                            {
+                                "code": "PROPOSAL_INCOMPLETE_PARENT_LINEAGE",
+                                "object_id": row["id"],
+                                "message": "ResearchProposal provenance is missing one or more required lineage parents.",
+                            }
+                        )
+
+                if row["kind"] == "ProposalDecision":
+                    proposal_id = payload.get("proposal_id")
+                    subject_id = payload.get("subject_id")
+                    method_id = payload.get("method_id")
+                    decision = payload.get("decision")
+                    promoted_id = payload.get("promoted_hypothesis_id")
+
+                    proposal_row = object_index.get(proposal_id)
+                    if proposal_row is None or proposal_row["kind"] != "ResearchProposal":
+                        issues.append(
+                            {
+                                "code": "GATE_INVALID_PROPOSAL_REFERENCE",
+                                "object_id": row["id"],
+                                "message": f"ProposalDecision references invalid proposal {proposal_id}.",
+                            }
+                        )
+                    else:
+                        proposal_payload = json.loads(proposal_row["payload_json"])
+                        if proposal_payload.get("subject_id") != subject_id:
+                            issues.append(
+                                {
+                                    "code": "GATE_SUBJECT_MISMATCH",
+                                    "object_id": row["id"],
+                                    "message": "ProposalDecision subject does not match its ResearchProposal subject.",
+                                }
+                            )
+
+                    method_row = object_index.get(method_id)
+                    if method_row is None or method_row["kind"] != "Method":
+                        issues.append(
+                            {
+                                "code": "GATE_INVALID_METHOD_REFERENCE",
+                                "object_id": row["id"],
+                                "message": f"ProposalDecision references invalid method {method_id}.",
+                            }
+                        )
+                    else:
+                        method_payload = json.loads(method_row["payload_json"])
+                        if method_payload.get("kind") != "PROPOSAL_GATE" or method_payload.get("deterministic") is not True:
+                            issues.append(
+                                {
+                                    "code": "GATE_METHOD_NOT_DETERMINISTIC",
+                                    "object_id": row["id"],
+                                    "message": "ProposalDecision method must be deterministic PROPOSAL_GATE.",
+                                }
+                            )
+
+                    gate_provenance = payload.get("provenance") or {}
+                    if gate_provenance.get("model_id"):
+                        issues.append(
+                            {
+                                "code": "GATE_DECISION_MODEL_AUTHORED",
+                                "object_id": row["id"],
+                                "message": "ProposalDecision must not be model-authored.",
+                            }
+                        )
+                    if payload.get("deterministic") is not True:
+                        issues.append(
+                            {
+                                "code": "GATE_DECISION_NOT_DETERMINISTIC",
+                                "object_id": row["id"],
+                                "message": "ProposalDecision must be deterministic.",
+                            }
+                        )
+
+                    if decision == "ACCEPT":
+                        if not promoted_id:
+                            issues.append(
+                                {
+                                    "code": "GATE_ACCEPT_WITHOUT_PROMOTED_HYPOTHESIS",
+                                    "object_id": row["id"],
+                                    "message": "Accepted ProposalDecision has no promoted hypothesis.",
+                                }
+                            )
+                        else:
+                            promoted_row = object_index.get(promoted_id)
+                            if promoted_row is None or promoted_row["kind"] != "Hypothesis":
+                                issues.append(
+                                    {
+                                        "code": "GATE_INVALID_PROMOTED_HYPOTHESIS",
+                                        "object_id": row["id"],
+                                        "message": f"Accepted ProposalDecision points to invalid hypothesis {promoted_id}.",
+                                    }
+                                )
+                            else:
+                                promoted_payload = json.loads(promoted_row["payload_json"])
+                                promoted_provenance = promoted_payload.get("provenance") or {}
+                                required = {proposal_id, subject_id, row["id"]}
+                                if not required.issubset(set(promoted_provenance.get("parent_ids") or [])):
+                                    issues.append(
+                                        {
+                                            "code": "GATE_PROMOTED_HYPOTHESIS_LINEAGE_INCOMPLETE",
+                                            "object_id": row["id"],
+                                            "message": "Promoted hypothesis does not retain proposal, subject, and gate-decision lineage.",
+                                        }
+                                    )
+                        if proposal_row is not None and proposal_row["kind"] == "ResearchProposal":
+                            proposal_payload = json.loads(proposal_row["payload_json"])
+                            if proposal_payload.get("proposal_kind") != "HYPOTHESIS_REFINEMENT":
+                                issues.append(
+                                    {
+                                        "code": "GATE_ACCEPT_NON_REFINEMENT",
+                                        "object_id": row["id"],
+                                        "message": "Only HYPOTHESIS_REFINEMENT proposals may be promoted.",
+                                    }
+                                )
+                    elif promoted_id:
+                        issues.append(
+                            {
+                                "code": "GATE_NON_ACCEPT_WITH_PROMOTED_HYPOTHESIS",
+                                "object_id": row["id"],
+                                "message": "Rejected or deferred ProposalDecision must not point to a promoted hypothesis.",
+                            }
+                        )
 
                 if row["kind"] == "Finding" and payload.get("state") == ResearchState.CONFIRMED.value:
                     evidence_ids = payload.get("evidence_ids") or []

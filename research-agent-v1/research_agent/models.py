@@ -57,6 +57,8 @@ class EdgeRelation(StrEnum):
     BEARS_ON = "BEARS_ON"
     ASSESSES = "ASSESSES"
     PROPOSES_FOR = "PROPOSES_FOR"
+    DECIDES_ON = "DECIDES_ON"
+    PROMOTES_TO = "PROMOTES_TO"
 
 
 class SourceType(StrEnum):
@@ -76,6 +78,7 @@ class MethodKind(StrEnum):
     MODEL_REASONING = "MODEL_REASONING"
     TEST = "TEST"
     CRITIC_REVIEW = "CRITIC_REVIEW"
+    PROPOSAL_GATE = "PROPOSAL_GATE"
 
 
 class ExperimentStatus(StrEnum):
@@ -122,6 +125,12 @@ class ProposalStatus(StrEnum):
     PROPOSED = "PROPOSED"
     REJECTED = "REJECTED"
     ACCEPTED = "ACCEPTED"
+
+
+class PromotionDecision(StrEnum):
+    ACCEPT = "ACCEPT"
+    REJECT = "REJECT"
+    DEFER = "DEFER"
 
 
 class Provenance(BaseModel):
@@ -254,6 +263,20 @@ class ResearchProposal(BaseModel):
     model_output_hash: str
     repository_content_treated_as_data: bool = True
     schema_version: str = "1"
+    provenance: Provenance
+
+
+class ProposalDecision(BaseModel):
+    id: str = Field(default_factory=lambda: new_id("PGD"))
+    proposal_id: str
+    subject_id: str
+    method_id: str
+    decision: PromotionDecision
+    rationale: str
+    reason_codes: list[str] = Field(default_factory=list)
+    promoted_hypothesis_id: str | None = None
+    deterministic: bool = True
+    gate_version: str = "1.7"
     provenance: Provenance
 
 
