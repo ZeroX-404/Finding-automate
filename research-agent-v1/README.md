@@ -124,3 +124,37 @@ Validate one hypothesis produced by V1.3:
 ```bash
 research-agent validate-context HYP-... targets/my_repo --db signal-evidence.db
 ```
+
+## V1.5 Independent Critic
+
+V1.5 adds a separate ledger-only critic stage. The critic does not read repository
+files, execute scanners, create a Validation, or create/promote a Finding.
+
+```text
+ContextAssessment
+      ↓
+Independent Critic
+      ├── objections
+      ├── missing evidence
+      ├── alternative explanations
+      └── verdict
+```
+
+Verdicts are epistemic, not vulnerability states:
+
+- `SUPPORTS`: keep investigating; no deterministic falsifier survived the current review.
+- `CHALLENGES`: material counterpoint exists and must be resolved.
+- `REJECTS`: current deterministic evidence satisfies a falsifier for this hypothesis/snapshot.
+- `INCONCLUSIVE`: evidence is insufficient for the critic to decide.
+
+Run the acceptance corpus:
+
+```bash
+research-agent critic-case --db critic-evidence.db --repo-commit "$(git rev-parse HEAD)"
+```
+
+Review one assessment:
+
+```bash
+research-agent criticize-context CAS-xxxxxxxxxxxx --db signal-evidence.db
+```

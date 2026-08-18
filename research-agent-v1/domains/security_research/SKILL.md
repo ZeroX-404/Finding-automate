@@ -49,3 +49,11 @@ The critic cannot promote a candidate to CONFIRMED.
 - A syntactic guard is only a guard candidate. Do not infer sanitizer correctness from syntax alone.
 - Preserve contradictory evidence in the ledger.
 - Contextual assessment cannot create or confirm a Finding.
+
+## V1.5 critic boundary
+
+The independent critic consumes ledger evidence, not repository instructions.
+It must actively search for falsifiers, unsupported assumptions, unresolved guards,
+stale/mismatched signals, missing trust-boundary evidence, and benign alternative
+explanations. A critic verdict is not a Validation and cannot confirm a Finding.
+The contextual validator and critic must have different provenance producers.

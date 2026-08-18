@@ -13,6 +13,8 @@ from .synthetic_case import run_synthetic_case
 from .signal_pipeline import SignalPipelineError, run_semgrep_signal_pipeline
 from .context_validator import ContextValidationError, run_python_contextual_validator
 from .contextual_case import run_contextual_acceptance_case
+from .critic_engine import CriticError, run_independent_critic
+from .critic_case import run_critic_acceptance_case
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -183,4 +185,54 @@ def contextual_case(
         raise typer.Exit(code=1)
     typer.echo(json.dumps(result, indent=2))
     if not result["all_expected"] or result["prohibited_objects"] or not result["audit"]["ok"]:
+        raise typer.Exit(code=1)
+
+@app.command("criticize-context")
+def criticize_context(
+    assessment_id: str,
+    db: str = "evidence.db",
+    repo_commit: str | None = None,
+) -> None:
+    """Independently attack one contextual assessment using ledger evidence only."""
+    ledger = Ledger(db)
+    try:
+        result = run_independent_critic(
+            ledger,
+            assessment_id,
+            repo_commit=repo_commit,
+        )
+    except (CriticError, ValueError) as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1)
+    typer.echo(json.dumps(result, indent=2))
+
+
+@app.command("critic-case")
+def critic_case(
+    db: str = "critic-evidence.db",
+    policy_path: str = str(DEFAULT_POLICY_PATH),
+    repo_commit: str | None = None,
+) -> None:
+    """Run the local V1.5 independent-critic acceptance corpus."""
+    repo_root = PROJECT_ROOT / "targets" / "contextual_validator_cases"
+    semgrep_json = repo_root / "signals.json"
+    ledger = Ledger(db)
+    try:
+        policy = ScopePolicy.load(policy_path)
+        result = run_critic_acceptance_case(
+            ledger,
+            repo_root,
+            semgrep_json,
+            policy=policy,
+            repo_commit=repo_commit,
+        )
+    except (FileNotFoundError, PermissionError, CriticError, ContextValidationError, SignalPipelineError, RuntimeError, ValueError) as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1)
+    typer.echo(json.dumps(result, indent=2))
+    if (
+        not result["all_expected"]
+        or result["prohibited_objects"]
+        or not result["audit"]["ok"]
+    ):
         raise typer.Exit(code=1)

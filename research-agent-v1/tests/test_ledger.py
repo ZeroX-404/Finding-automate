@@ -122,3 +122,41 @@ def test_audit_rejects_confirmed_finding_with_foreign_validations(tmp_path):
     codes = {issue["code"] for issue in result["issues"]}
     assert result["ok"] is False
     assert "VALIDATION_SUBJECT_MISMATCH" in codes
+
+
+
+def test_audit_detects_critic_assessment_subject_mismatch(tmp_path):
+    from research_agent.models import (
+        AssessmentStatus,
+        ContextAssessment,
+        CriticRecord,
+        CriticVerdict,
+        Hypothesis,
+        Provenance,
+    )
+
+    ledger = Ledger(tmp_path / "critic-mismatch.db")
+    ledger.init()
+    p = Provenance(created_by="test")
+    h1 = Hypothesis(statement="h1", falsifier="f", prediction="p", provenance=p)
+    h2 = Hypothesis(statement="h2", falsifier="f", prediction="p", provenance=p)
+    ledger.put(h1)
+    ledger.put(h2)
+    assessment = ContextAssessment(
+        hypothesis_id=h1.id,
+        status=AssessmentStatus.INCONCLUSIVE,
+        rationale="test",
+        provenance=Provenance(created_by="contextual-validator"),
+    )
+    ledger.put(assessment)
+    critic = CriticRecord(
+        subject_id=h2.id,
+        assessment_id=assessment.id,
+        verdict=CriticVerdict.INCONCLUSIVE,
+        provenance=Provenance(created_by="independent-critic-v1.5"),
+    )
+    ledger.put(critic)
+
+    audit = ledger.audit()
+    assert audit["ok"] is False
+    assert "CRITIC_ASSESSMENT_SUBJECT_MISMATCH" in {i["code"] for i in audit["issues"]}

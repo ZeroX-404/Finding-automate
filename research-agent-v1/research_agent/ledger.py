@@ -366,6 +366,7 @@ class Ledger:
                     "experiment_id",
                     "hypothesis_id",
                     "subject_id",
+                    "assessment_id",
                 ):
                     value = payload.get(field)
                     if value:
@@ -392,6 +393,62 @@ class Ledger:
                                 "message": f"{field} references missing object {referenced_id}.",
                             }
                         )
+
+                if row["kind"] == "CriticRecord" and payload.get("assessment_id"):
+                    assessment_id = payload["assessment_id"]
+                    assessment_row = object_index.get(assessment_id)
+                    if assessment_row is not None:
+                        if assessment_row["kind"] != "ContextAssessment":
+                            issues.append(
+                                {
+                                    "code": "INVALID_CRITIC_ASSESSMENT_REFERENCE",
+                                    "object_id": row["id"],
+                                    "message": f"{assessment_id} is {assessment_row['kind']}, not ContextAssessment.",
+                                }
+                            )
+                        else:
+                            assessment_payload = json.loads(assessment_row["payload_json"])
+                            if assessment_payload.get("hypothesis_id") != payload.get("subject_id"):
+                                issues.append(
+                                    {
+                                        "code": "CRITIC_ASSESSMENT_SUBJECT_MISMATCH",
+                                        "object_id": row["id"],
+                                        "message": (
+                                            f"Critic targets {payload.get('subject_id')} but assessment "
+                                            f"{assessment_id} targets {assessment_payload.get('hypothesis_id')}."
+                                        ),
+                                    }
+                                )
+
+                            critic_actor = (payload.get("provenance") or {}).get("created_by")
+                            assessment_actor = (assessment_payload.get("provenance") or {}).get("created_by")
+                            if critic_actor and critic_actor == assessment_actor:
+                                issues.append(
+                                    {
+                                        "code": "CRITIC_NOT_INDEPENDENT",
+                                        "object_id": row["id"],
+                                        "message": "Critic and contextual assessment have the same producer.",
+                                    }
+                                )
+
+                            assessment_evidence = set(
+                                (assessment_payload.get("supporting_evidence_ids") or [])
+                                + (assessment_payload.get("contradictory_evidence_ids") or [])
+                                + (assessment_payload.get("neutral_evidence_ids") or [])
+                            )
+                            foreign_evidence = [
+                                evidence_id
+                                for evidence_id in payload.get("evidence_ids", []) or []
+                                if evidence_id not in assessment_evidence
+                            ]
+                            if foreign_evidence:
+                                issues.append(
+                                    {
+                                        "code": "CRITIC_EVIDENCE_OUTSIDE_ASSESSMENT",
+                                        "object_id": row["id"],
+                                        "message": f"Critic references evidence outside reviewed assessment: {foreign_evidence}.",
+                                    }
+                                )
 
                 if row["kind"] == "Finding" and payload.get("state") == ResearchState.CONFIRMED.value:
                     evidence_ids = payload.get("evidence_ids") or []

@@ -74,6 +74,7 @@ class MethodKind(StrEnum):
     PARSER = "PARSER"
     MODEL_REASONING = "MODEL_REASONING"
     TEST = "TEST"
+    CRITIC_REVIEW = "CRITIC_REVIEW"
 
 
 class ExperimentStatus(StrEnum):
@@ -208,9 +209,13 @@ class CriticRecord(BaseModel):
     id: str = Field(default_factory=lambda: new_id("CRT"))
     subject_id: str
     verdict: CriticVerdict
+    assessment_id: str | None = None
+    method_id: str | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
     objections: list[str] = Field(default_factory=list)
     missing_evidence: list[str] = Field(default_factory=list)
     alternative_explanations: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
     provenance: Provenance
 
 
