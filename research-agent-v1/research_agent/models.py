@@ -41,6 +41,61 @@ class EvidenceRelation(StrEnum):
     NEUTRAL = "NEUTRAL"
 
 
+class EdgeRelation(StrEnum):
+    DERIVED_FROM = "DERIVED_FROM"
+    OBSERVED_FROM = "OBSERVED_FROM"
+    MOTIVATED_BY = "MOTIVATED_BY"
+    TESTS = "TESTS"
+    USES_METHOD = "USES_METHOD"
+    PRODUCES = "PRODUCES"
+    SUPPORTS = "SUPPORTS"
+    CONTRADICTS = "CONTRADICTS"
+    CRITICIZES = "CRITICIZES"
+    VALIDATES = "VALIDATES"
+    REFERENCES = "REFERENCES"
+    REMEDIATES = "REMEDIATES"
+
+
+class SourceType(StrEnum):
+    REPOSITORY = "REPOSITORY"
+    FILE = "FILE"
+    TOOL_OUTPUT = "TOOL_OUTPUT"
+    DATASET = "DATASET"
+    DOCUMENT = "DOCUMENT"
+    MANUAL = "MANUAL"
+
+
+class MethodKind(StrEnum):
+    STATIC_ANALYSIS = "STATIC_ANALYSIS"
+    MANUAL_REVIEW = "MANUAL_REVIEW"
+    REPRODUCTION = "REPRODUCTION"
+    PARSER = "PARSER"
+    MODEL_REASONING = "MODEL_REASONING"
+    TEST = "TEST"
+
+
+class ExperimentStatus(StrEnum):
+    PLANNED = "PLANNED"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    SKIPPED = "SKIPPED"
+
+
+class ClaimState(StrEnum):
+    CANDIDATE = "CANDIDATE"
+    SUPPORTED = "SUPPORTED"
+    CONTRADICTED = "CONTRADICTED"
+    INCONCLUSIVE = "INCONCLUSIVE"
+
+
+class CriticVerdict(StrEnum):
+    SUPPORTS = "SUPPORTS"
+    CHALLENGES = "CHALLENGES"
+    REJECTS = "REJECTS"
+    INCONCLUSIVE = "INCONCLUSIVE"
+
+
 class Provenance(BaseModel):
     created_by: str
     model_id: str | None = None
@@ -54,11 +109,32 @@ class Provenance(BaseModel):
     created_at: datetime = Field(default_factory=utc_now)
 
 
+class Source(BaseModel):
+    id: str = Field(default_factory=lambda: new_id("SRC"))
+    source_type: SourceType
+    reference: str
+    content_hash: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    provenance: Provenance
+
+
+class Method(BaseModel):
+    id: str = Field(default_factory=lambda: new_id("MTH"))
+    name: str
+    kind: MethodKind
+    version: str | None = None
+    deterministic: bool = False
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    provenance: Provenance
+
+
 class Observation(BaseModel):
     id: str = Field(default_factory=lambda: new_id("OBS"))
     summary: str
     artifact: str | None = None
     location: str | None = None
+    source_id: str | None = None
+    method_id: str | None = None
     raw: dict[str, Any] = Field(default_factory=dict)
     provenance: Provenance
 
@@ -74,13 +150,46 @@ class Hypothesis(BaseModel):
     provenance: Provenance
 
 
+class Experiment(BaseModel):
+    id: str = Field(default_factory=lambda: new_id("EXP"))
+    hypothesis_id: str
+    method_id: str
+    objective: str
+    procedure: list[str] = Field(default_factory=list)
+    expected_result: str
+    observed_result: str | None = None
+    status: ExperimentStatus = ExperimentStatus.PLANNED
+    provenance: Provenance
+
+
 class Evidence(BaseModel):
     id: str = Field(default_factory=lambda: new_id("EVD"))
     description: str
     source_type: str
     source_ref: str
     relation: EvidenceRelation
+    source_id: str | None = None
+    method_id: str | None = None
+    experiment_id: str | None = None
     immutable_hash: str | None = None
+    provenance: Provenance
+
+
+class Claim(BaseModel):
+    id: str = Field(default_factory=lambda: new_id("CLM"))
+    statement: str
+    state: ClaimState = ClaimState.CANDIDATE
+    hypothesis_id: str | None = None
+    provenance: Provenance
+
+
+class CriticRecord(BaseModel):
+    id: str = Field(default_factory=lambda: new_id("CRT"))
+    subject_id: str
+    verdict: CriticVerdict
+    objections: list[str] = Field(default_factory=list)
+    missing_evidence: list[str] = Field(default_factory=list)
+    alternative_explanations: list[str] = Field(default_factory=list)
     provenance: Provenance
 
 
@@ -101,8 +210,10 @@ class Finding(BaseModel):
     description: str
     state: ResearchState = ResearchState.CANDIDATE
     hypothesis_id: str | None = None
+    claim_ids: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     validation_ids: list[str] = Field(default_factory=list)
+    critic_ids: list[str] = Field(default_factory=list)
     cwe: str | None = None
     cve: str | None = None
     cvss_vector: str | None = None

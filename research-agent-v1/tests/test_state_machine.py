@@ -14,45 +14,74 @@ def provenance():
     return Provenance(created_by="test")
 
 
+def validation(finding, level, passed=True):
+    return Validation(
+        subject_id=finding.id,
+        level=level,
+        passed=passed,
+        rationale="test validation",
+        provenance=provenance(),
+    )
+
+
+def test_confirmation_requires_evidence():
+    finding = Finding(
+        title="Candidate",
+        description="test",
+        state=ResearchState.UNDER_TEST,
+        provenance=provenance(),
+    )
+    critic = validation(finding, ValidationLevel.V1_CRITIC)
+    deterministic = validation(finding, ValidationLevel.V3_DETERMINISTIC)
+
+    with pytest.raises(ValueError, match="without evidence"):
+        transition_finding(
+            finding, ResearchState.CONFIRMED, [critic, deterministic]
+        )
+
+
+def test_confirmation_requires_critic():
+    finding = Finding(
+        title="Candidate",
+        description="test",
+        state=ResearchState.UNDER_TEST,
+        evidence_ids=["EVD-test"],
+        provenance=provenance(),
+    )
+    deterministic = validation(finding, ValidationLevel.V3_DETERMINISTIC)
+
+    with pytest.raises(ValueError, match="critic"):
+        transition_finding(finding, ResearchState.CONFIRMED, [deterministic])
+
+
 def test_confirmation_requires_deterministic_validation():
     finding = Finding(
         title="Candidate",
         description="test",
         state=ResearchState.UNDER_TEST,
+        evidence_ids=["EVD-test"],
         provenance=provenance(),
     )
+    critic = validation(finding, ValidationLevel.V1_CRITIC)
 
-    critic = Validation(
-        subject_id=finding.id,
-        level=ValidationLevel.V1_CRITIC,
-        passed=True,
-        rationale="looks supported",
-        provenance=provenance(),
-    )
-
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="deterministic"):
         transition_finding(finding, ResearchState.CONFIRMED, [critic])
 
 
-def test_confirmation_with_v3_pass():
+def test_confirmation_with_required_gates():
     finding = Finding(
         title="Candidate",
         description="test",
         state=ResearchState.UNDER_TEST,
+        evidence_ids=["EVD-test"],
         provenance=provenance(),
     )
-
-    deterministic = Validation(
-        subject_id=finding.id,
-        level=ValidationLevel.V3_DETERMINISTIC,
-        passed=True,
-        rationale="deterministically reproduced",
-        reproducibility_passes=3,
-        reproducibility_attempts=3,
-        provenance=provenance(),
-    )
+    critic = validation(finding, ValidationLevel.V1_CRITIC)
+    deterministic = validation(finding, ValidationLevel.V3_DETERMINISTIC)
 
     updated = transition_finding(
-        finding, ResearchState.CONFIRMED, [deterministic]
+        finding, ResearchState.CONFIRMED, [critic, deterministic]
     )
     assert updated.state == ResearchState.CONFIRMED
+    assert critic.id in updated.validation_ids
+    assert deterministic.id in updated.validation_ids

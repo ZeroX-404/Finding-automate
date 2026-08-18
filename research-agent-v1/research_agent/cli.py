@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import typer
 
@@ -55,6 +54,28 @@ def ingest_sarif(
 
 
 @app.command("explain")
-def explain(object_id: str, db: str = "evidence.db") -> None:
+def explain(
+    object_id: str,
+    db: str = "evidence.db",
+    max_depth: int = 4,
+) -> None:
     ledger = Ledger(db)
-    typer.echo(json.dumps(ledger.graph(object_id), indent=2))
+    ledger.init()
+    typer.echo(json.dumps(ledger.trace(object_id, max_depth=max_depth), indent=2))
+
+
+@app.command("history")
+def history(object_id: str, db: str = "evidence.db") -> None:
+    ledger = Ledger(db)
+    ledger.init()
+    typer.echo(json.dumps(ledger.history(object_id), indent=2))
+
+
+@app.command("audit-ledger")
+def audit_ledger(db: str = "evidence.db") -> None:
+    ledger = Ledger(db)
+    ledger.init()
+    result = ledger.audit()
+    typer.echo(json.dumps(result, indent=2))
+    if not result["ok"]:
+        raise typer.Exit(code=1)
