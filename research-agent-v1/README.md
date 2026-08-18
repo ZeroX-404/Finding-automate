@@ -82,3 +82,17 @@ A successful run must produce a `CONFIRMED` synthetic finding, 3/3 deterministic
 reproductions, a clean ledger audit, and a trace containing Source, Method,
 Observation, Hypothesis, Experiment, Evidence, Claim, CriticRecord, Validation,
 and Finding objects.
+
+## V1.3 real signal pipeline
+
+Semgrep output can now be converted into auditable signal candidates without promoting scanner output to a finding. The pipeline records scanner provenance, resolves source paths inside an authorized repository root, captures bounded source context, creates a falsifiable hypothesis candidate, and stores context as neutral evidence.
+
+The pipeline deliberately does **not** create a Claim, Validation, or Finding. That promotion is reserved for later independent reasoning and validation stages.
+
+Security invariant: scanner paths and repository contents are treated as untrusted input. The requested repository must first match `repository_roots` in `policy/scope.yaml`; path traversal, absolute paths outside that authorized repository, and symlink escapes are rejected before source context is read.
+
+Acceptance fixture:
+
+```bash
+research-agent analyze-semgrep targets/semgrep_signal_target/semgrep.json targets/semgrep_signal_target --db signal-evidence.db
+```

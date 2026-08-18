@@ -9,6 +9,7 @@ from .adapters.semgrep import observations_from_semgrep
 from .ledger import Ledger
 from .policy import ScopePolicy
 from .synthetic_case import run_synthetic_case
+from .signal_pipeline import SignalPipelineError, run_semgrep_signal_pipeline
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -96,4 +97,31 @@ def synthetic_case(db: str = "evidence.db") -> None:
     """Run the local-only end-to-end acceptance research case."""
     ledger = Ledger(db)
     result = run_synthetic_case(ledger)
+    typer.echo(json.dumps(result, indent=2))
+
+
+@app.command("analyze-semgrep")
+def analyze_semgrep(
+    json_path: str,
+    repo_root: str,
+    db: str = "evidence.db",
+    policy_path: str = "policy/scope.yaml",
+    repo_commit: str | None = None,
+    context_radius: int = 4,
+) -> None:
+    """Turn Semgrep JSON into observations, bounded context, and hypothesis candidates."""
+    ledger = Ledger(db)
+    try:
+        policy = ScopePolicy.load(policy_path)
+        result = run_semgrep_signal_pipeline(
+            ledger,
+            json_path,
+            repo_root,
+            policy=policy,
+            repo_commit=repo_commit,
+            context_radius=context_radius,
+        )
+    except (FileNotFoundError, PermissionError, SignalPipelineError, ValueError) as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1)
     typer.echo(json.dumps(result, indent=2))

@@ -1,7 +1,8 @@
 scope_id: local-security-research-v1
 
+repository_base: ..
 repository_roots:
-  - ./targets
+  - targets
 
 capabilities:
   reason: ALLOW
