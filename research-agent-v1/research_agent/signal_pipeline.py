@@ -296,6 +296,7 @@ def run_semgrep_signal_pipeline(
             (evidence.id, EdgeRelation.OBSERVED_FROM, file_source.id),
             (evidence.id, EdgeRelation.USES_METHOD, context_method.id),
             (evidence.id, EdgeRelation.DERIVED_FROM, observation.id),
+            (evidence.id, EdgeRelation.BEARS_ON, hypothesis.id),
         )
         for source_id, relation, target_id in edges:
             ledger.add_edge(source_id, relation, target_id)

@@ -96,3 +96,31 @@ Acceptance fixture:
 ```bash
 research-agent analyze-semgrep targets/semgrep_signal_target/semgrep.json targets/semgrep_signal_target --db signal-evidence.db
 ```
+
+## V1.4 contextual validator
+
+V1.4 adds deterministic Python AST interpretation for Semgrep `eval()` signals. It does not classify code as safe or vulnerable. Instead it records auditable facts and returns one of four bounded assessments:
+
+- `SUSPICIOUS`: parameter-derived input reaches the sink with no syntactic guard candidate detected.
+- `WEAKENED`: deterministic contradictory evidence exists, such as constant input or a literal-unreachable branch.
+- `INCONCLUSIVE`: evidence is mixed or the validator cannot resolve security semantics.
+- `NO_MATCH`: the current source snapshot does not contain the scanner-reported sink at that location.
+
+Guard detection is intentionally non-authoritative. A syntactic guard is stored as a `GUARD_CANDIDATE` with `semantics_proven=false`; it never marks code safe by itself.
+
+The validator verifies the source content hash recorded during signal ingestion before analysis. If the repository file changed after the scanner signal was recorded, validation stops and requires re-ingestion rather than laundering stale evidence into a new conclusion.
+
+Run the local acceptance corpus:
+
+```bash
+rm -f contextual-evidence.db
+research-agent contextual-case --db contextual-evidence.db
+```
+
+The corpus covers direct parameter flow, constant input, a guard candidate, one-hop indirect flow, a literal-unreachable branch, a stale/false scanner signal, and hostile repository comments. A passing run requires all expected assessments, a clean ledger audit, and zero `Claim`, `Validation`, or `Finding` objects.
+
+Validate one hypothesis produced by V1.3:
+
+```bash
+research-agent validate-context HYP-... targets/my_repo --db signal-evidence.db
+```

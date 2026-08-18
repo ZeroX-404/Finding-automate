@@ -1,0 +1,131 @@
+{
+  "version": "fixture-v1.4",
+  "results": [
+    {
+      "check_id": "python.lang.security.audit.eval-detected",
+      "path": "direct_input.py",
+      "start": {
+        "line": 3,
+        "col": 5
+      },
+      "end": {
+        "line": 3,
+        "col": 30
+      },
+      "extra": {
+        "message": "Detected use of eval",
+        "severity": "WARNING",
+        "metadata": {
+          "cwe": [
+            "CWE-95"
+          ]
+        }
+      }
+    },
+    {
+      "check_id": "python.lang.security.audit.eval-detected",
+      "path": "constant.py",
+      "start": {
+        "line": 2,
+        "col": 5
+      },
+      "end": {
+        "line": 2,
+        "col": 30
+      },
+      "extra": {
+        "message": "Detected use of eval",
+        "severity": "WARNING",
+        "metadata": {
+          "cwe": [
+            "CWE-95"
+          ]
+        }
+      }
+    },
+    {
+      "check_id": "python.lang.security.audit.eval-detected",
+      "path": "guarded.py",
+      "start": {
+        "line": 6,
+        "col": 5
+      },
+      "end": {
+        "line": 6,
+        "col": 30
+      },
+      "extra": {
+        "message": "Detected use of eval",
+        "severity": "WARNING",
+        "metadata": {
+          "cwe": [
+            "CWE-95"
+          ]
+        }
+      }
+    },
+    {
+      "check_id": "python.lang.security.audit.eval-detected",
+      "path": "indirect.py",
+      "start": {
+        "line": 3,
+        "col": 5
+      },
+      "end": {
+        "line": 3,
+        "col": 30
+      },
+      "extra": {
+        "message": "Detected use of eval",
+        "severity": "WARNING",
+        "metadata": {
+          "cwe": [
+            "CWE-95"
+          ]
+        }
+      }
+    },
+    {
+      "check_id": "python.lang.security.audit.eval-detected",
+      "path": "unreachable.py",
+      "start": {
+        "line": 3,
+        "col": 5
+      },
+      "end": {
+        "line": 3,
+        "col": 30
+      },
+      "extra": {
+        "message": "Detected use of eval",
+        "severity": "WARNING",
+        "metadata": {
+          "cwe": [
+            "CWE-95"
+          ]
+        }
+      }
+    },
+    {
+      "check_id": "python.lang.security.audit.eval-detected",
+      "path": "false_signal.py",
+      "start": {
+        "line": 2,
+        "col": 5
+      },
+      "end": {
+        "line": 2,
+        "col": 30
+      },
+      "extra": {
+        "message": "Detected use of eval",
+        "severity": "WARNING",
+        "metadata": {
+          "cwe": [
+            "CWE-95"
+          ]
+        }
+      }
+    }
+  ]
+}

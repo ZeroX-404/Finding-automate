@@ -376,6 +376,9 @@ class Ledger:
                     "evidence_ids",
                     "validation_ids",
                     "critic_ids",
+                    "supporting_evidence_ids",
+                    "contradictory_evidence_ids",
+                    "neutral_evidence_ids",
                 ):
                     for value in payload.get(field, []) or []:
                         references.append((field, value))

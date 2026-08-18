@@ -95,6 +95,12 @@ def test_pipeline_creates_signal_not_finding(tmp_path):
     assert evidence is not None
     assert evidence["payload"]["relation"] == "NEUTRAL"
 
+    evidence_graph = ledger.graph(candidate["context_evidence_id"])
+    assert any(
+        edge["relation"] == "BEARS_ON" and edge["target_id"] == candidate["hypothesis_id"]
+        for edge in evidence_graph["outgoing"]
+    )
+
 
 def test_context_is_bounded_and_hashed(tmp_path):
     target = tmp_path / "app.py"

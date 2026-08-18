@@ -54,6 +54,8 @@ class EdgeRelation(StrEnum):
     VALIDATES = "VALIDATES"
     REFERENCES = "REFERENCES"
     REMEDIATES = "REMEDIATES"
+    BEARS_ON = "BEARS_ON"
+    ASSESSES = "ASSESSES"
 
 
 class SourceType(StrEnum):
@@ -87,6 +89,13 @@ class ClaimState(StrEnum):
     SUPPORTED = "SUPPORTED"
     CONTRADICTED = "CONTRADICTED"
     INCONCLUSIVE = "INCONCLUSIVE"
+
+
+class AssessmentStatus(StrEnum):
+    SUSPICIOUS = "SUSPICIOUS"
+    WEAKENED = "WEAKENED"
+    INCONCLUSIVE = "INCONCLUSIVE"
+    NO_MATCH = "NO_MATCH"
 
 
 class CriticVerdict(StrEnum):
@@ -172,6 +181,18 @@ class Evidence(BaseModel):
     method_id: str | None = None
     experiment_id: str | None = None
     immutable_hash: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    provenance: Provenance
+
+
+class ContextAssessment(BaseModel):
+    id: str = Field(default_factory=lambda: new_id("CAS"))
+    hypothesis_id: str
+    status: AssessmentStatus
+    rationale: str
+    supporting_evidence_ids: list[str] = Field(default_factory=list)
+    contradictory_evidence_ids: list[str] = Field(default_factory=list)
+    neutral_evidence_ids: list[str] = Field(default_factory=list)
     provenance: Provenance
 
 
