@@ -85,3 +85,25 @@ def test_confirmation_with_required_gates():
     assert updated.state == ResearchState.CONFIRMED
     assert critic.id in updated.validation_ids
     assert deterministic.id in updated.validation_ids
+
+
+def test_confirmation_rejects_validation_for_another_finding():
+    finding = Finding(
+        title="Candidate",
+        description="test",
+        state=ResearchState.UNDER_TEST,
+        evidence_ids=["EVD-test"],
+        provenance=provenance(),
+    )
+    other = Finding(
+        title="Other",
+        description="other",
+        state=ResearchState.UNDER_TEST,
+        evidence_ids=["EVD-other"],
+        provenance=provenance(),
+    )
+    critic = validation(other, ValidationLevel.V1_CRITIC)
+    deterministic = validation(other, ValidationLevel.V3_DETERMINISTIC)
+
+    with pytest.raises(ValueError, match="subject mismatch"):
+        transition_finding(finding, ResearchState.CONFIRMED, [critic, deterministic])

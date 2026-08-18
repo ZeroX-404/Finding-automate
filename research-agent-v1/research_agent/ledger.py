@@ -7,7 +7,7 @@ from collections import deque
 from pathlib import Path
 from typing import Any
 
-from .models import EdgeRelation, ResearchState
+from .models import EdgeRelation, ResearchState, ValidationLevel
 
 
 SCHEMA = """
@@ -344,6 +344,7 @@ class Ledger:
             ).fetchall()
 
             known_ids = {row["id"] for row in rows}
+            object_index = {row["id"]: row for row in rows}
 
             for row in rows:
                 canonical = _canonical_json(json.loads(row["payload_json"]))
@@ -390,7 +391,10 @@ class Ledger:
                         )
 
                 if row["kind"] == "Finding" and payload.get("state") == ResearchState.CONFIRMED.value:
-                    if not payload.get("evidence_ids"):
+                    evidence_ids = payload.get("evidence_ids") or []
+                    validation_ids = payload.get("validation_ids") or []
+
+                    if not evidence_ids:
                         issues.append(
                             {
                                 "code": "CONFIRMED_WITHOUT_EVIDENCE",
@@ -398,12 +402,66 @@ class Ledger:
                                 "message": "Confirmed finding has no evidence IDs.",
                             }
                         )
-                    if not payload.get("validation_ids"):
+                    for evidence_id in evidence_ids:
+                        evidence_row = object_index.get(evidence_id)
+                        if evidence_row is not None and evidence_row["kind"] != "Evidence":
+                            issues.append(
+                                {
+                                    "code": "INVALID_EVIDENCE_REFERENCE",
+                                    "object_id": row["id"],
+                                    "message": f"{evidence_id} is {evidence_row['kind']}, not Evidence.",
+                                }
+                            )
+
+                    if not validation_ids:
                         issues.append(
                             {
                                 "code": "CONFIRMED_WITHOUT_VALIDATION",
                                 "object_id": row["id"],
                                 "message": "Confirmed finding has no validation IDs.",
+                            }
+                        )
+
+                    passed_levels: set[str] = set()
+                    for validation_id in validation_ids:
+                        validation_row = object_index.get(validation_id)
+                        if validation_row is None:
+                            continue
+                        if validation_row["kind"] != "Validation":
+                            issues.append(
+                                {
+                                    "code": "INVALID_VALIDATION_REFERENCE",
+                                    "object_id": row["id"],
+                                    "message": f"{validation_id} is {validation_row['kind']}, not Validation.",
+                                }
+                            )
+                            continue
+                        validation_payload = json.loads(validation_row["payload_json"])
+                        if validation_payload.get("subject_id") != row["id"]:
+                            issues.append(
+                                {
+                                    "code": "VALIDATION_SUBJECT_MISMATCH",
+                                    "object_id": row["id"],
+                                    "message": f"Validation {validation_id} targets {validation_payload.get('subject_id')}, not this finding.",
+                                }
+                            )
+                        if validation_payload.get("passed"):
+                            passed_levels.add(validation_payload.get("level"))
+
+                    if ValidationLevel.V1_CRITIC.value not in passed_levels:
+                        issues.append(
+                            {
+                                "code": "MISSING_PASSED_V1_CRITIC",
+                                "object_id": row["id"],
+                                "message": "Confirmed finding lacks a passing V1 critic validation.",
+                            }
+                        )
+                    if ValidationLevel.V3_DETERMINISTIC.value not in passed_levels:
+                        issues.append(
+                            {
+                                "code": "MISSING_PASSED_V3_DETERMINISTIC",
+                                "object_id": row["id"],
+                                "message": "Confirmed finding lacks a passing V3 deterministic validation.",
                             }
                         )
 

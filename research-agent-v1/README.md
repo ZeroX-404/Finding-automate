@@ -64,3 +64,21 @@ research-agent ingest-sarif artifacts/codeql.sarif
 ```
 
 V1 does not execute active attacks or interact with external targets.
+
+## End-to-end acceptance case
+
+V1.1+ includes a repository-owned synthetic authorization fixture. It exercises the
+full evidence lineage without network access or external targets:
+
+```bash
+research-agent synthetic-case --db synthetic-evidence.db
+research-agent audit-ledger --db synthetic-evidence.db
+# then use the returned finding_id
+research-agent explain FIND-... --db synthetic-evidence.db --max-depth 8
+research-agent history FIND-... --db synthetic-evidence.db
+```
+
+A successful run must produce a `CONFIRMED` synthetic finding, 3/3 deterministic
+reproductions, a clean ledger audit, and a trace containing Source, Method,
+Observation, Hypothesis, Experiment, Evidence, Claim, CriticRecord, Validation,
+and Finding objects.

@@ -30,6 +30,13 @@ def transition_finding(
     if new_state not in _ALLOWED.get(current, set()):
         raise ValueError(f"Illegal transition: {current} -> {new_state}")
 
+    foreign_validations = [v.id for v in validations if v.subject_id != finding.id]
+    if foreign_validations:
+        raise ValueError(
+            "Validation subject mismatch: all validations supplied to a finding transition "
+            f"must target {finding.id}; mismatched IDs: {foreign_validations}"
+        )
+
     validation_ids = list(dict.fromkeys(finding.validation_ids + [v.id for v in validations]))
 
     if new_state == ResearchState.CONFIRMED:

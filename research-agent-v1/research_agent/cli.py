@@ -8,6 +8,7 @@ from .adapters.codeql_sarif import observations_from_sarif
 from .adapters.semgrep import observations_from_semgrep
 from .ledger import Ledger
 from .policy import ScopePolicy
+from .synthetic_case import run_synthetic_case
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -61,8 +62,17 @@ def explain(
 ) -> None:
     ledger = Ledger(db)
     ledger.init()
-    typer.echo(json.dumps(ledger.trace(object_id, max_depth=max_depth), indent=2))
 
+    try:
+        result = ledger.trace(object_id, max_depth=max_depth)
+    except KeyError:
+        typer.echo(
+            f"Error: object '{object_id}' not found in {db}",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+
+    typer.echo(json.dumps(result, indent=2))
 
 @app.command("history")
 def history(object_id: str, db: str = "evidence.db") -> None:
@@ -79,3 +89,11 @@ def audit_ledger(db: str = "evidence.db") -> None:
     typer.echo(json.dumps(result, indent=2))
     if not result["ok"]:
         raise typer.Exit(code=1)
+
+
+@app.command("synthetic-case")
+def synthetic_case(db: str = "evidence.db") -> None:
+    """Run the local-only end-to-end acceptance research case."""
+    ledger = Ledger(db)
+    result = run_synthetic_case(ledger)
+    typer.echo(json.dumps(result, indent=2))
