@@ -1,0 +1,16 @@
+scope_id: local-security-research-v1
+
+repository_roots:
+  - ./targets
+
+capabilities:
+  reason: ALLOW
+  repo:read: ALLOW
+  scanner:static: ALLOW
+  sandbox:execute: ALLOW
+
+  network:read: DENY
+  target:test: DENY
+  repo:write: DENY
+  git:commit: DENY
+  external:submit: DENY
