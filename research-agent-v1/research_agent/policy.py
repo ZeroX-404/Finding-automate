@@ -19,6 +19,7 @@ class Capability(StrEnum):
     STATIC_SCAN = "scanner:static"
     SANDBOX_EXECUTE = "sandbox:execute"
     NETWORK_READ = "network:read"
+    MODEL_INVOKE = "model:invoke"
     TARGET_TEST = "target:test"
     REPO_WRITE = "repo:write"
     GIT_COMMIT = "git:commit"

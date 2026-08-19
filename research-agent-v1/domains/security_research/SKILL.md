@@ -77,3 +77,14 @@ is created. Evidence requests are deferred rather than executed by the gate.
 The gate must reject broken provenance, scope mismatch, duplicate hypotheses,
 and unsupported certainty language. It must never create a Claim, Validation,
 or Finding.
+
+## V1.8 real-model adapter boundary
+
+- Real model invocation requires the dedicated `model:invoke` capability; it is denied by default.
+- No model tools or function calls are exposed in V1.8.
+- Accept only one raw JSON object or one complete JSON code fence; do not mine prose for JSON fragments.
+- Enforce request/response byte ceilings and a request timeout.
+- Do not follow HTTP redirects from model endpoints.
+- Never persist API-key values. Persist only safe adapter metadata and request/response hashes.
+- Repository content remains untrusted data inside the user packet, never system instructions.
+- A valid HTTP/model response still creates only a `ResearchProposal`; it cannot create Validation or Finding state.

@@ -11,6 +11,7 @@ capabilities:
   sandbox:execute: ALLOW
 
   network:read: DENY
+  model:invoke: DENY
   target:test: DENY
   repo:write: DENY
   git:commit: DENY

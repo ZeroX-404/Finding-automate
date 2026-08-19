@@ -237,3 +237,59 @@ repository, network, or shell tools.
 research-agent gate-proposal PRP-... --db evidence.db
 research-agent promotion-case --db promotion-evidence.db
 ```
+
+## V1.8 OpenAI-compatible model adapter and runtime workspace
+
+V1.8 adds the first real HTTP model adapter while keeping acceptance completely
+offline. Runtime state is anchored to `.research-agent/` under the project root,
+so default databases no longer depend on the shell working directory.
+
+```text
+ResearchPacket
+     ↓
+OpenAICompatibleResearchModel
+     ├─ explicit endpoint/model
+     ├─ no tools
+     ├─ timeout
+     ├─ request-size ceiling
+     ├─ response-size ceiling
+     ├─ no HTTP redirects
+     ├─ raw/fenced JSON only
+     └─ strict ModelProposalOutput schema
+             ↓
+       ResearchProposal
+```
+
+The default policy contains `model:invoke: DENY`. A real endpoint call is blocked
+until the user explicitly changes that capability to `ALLOW`. API keys are read
+only from a named environment variable and are never persisted in ledger
+metadata. Safe adapter metadata records the endpoint origin plus SHA-256 hashes
+of the raw HTTP request/response for traceability.
+
+Show the runtime workspace:
+
+```bash
+research-agent runtime-info
+```
+
+Run the fully offline HTTP-adapter acceptance case:
+
+```bash
+research-agent compatible-case --repo-commit "$(git rev-parse HEAD)"
+```
+
+After explicitly authorizing `model:invoke`, invoke a configured compatible
+endpoint:
+
+```bash
+export RESEARCH_MODEL_API_KEY='...'
+research-agent research-propose-compatible \
+  CAS-... CRT-... targets/contextual_validator_cases \
+  my-model http://127.0.0.1:8000/v1 \
+  --api-key-env RESEARCH_MODEL_API_KEY \
+  --repo-commit "$(git rev-parse HEAD)"
+```
+
+V1.8 uses the Chat Completions compatibility surface and does not expose tool
+calling to the model. Model output remains a proposal and still requires the
+V1.7 promotion gate before it can affect durable hypothesis state.

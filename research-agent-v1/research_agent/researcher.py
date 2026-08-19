@@ -184,6 +184,13 @@ def run_model_researcher(
     except ValueError as exc:
         raise ResearcherError(f"model output uses unsupported proposal enum: {exc}") from exc
 
+    safe_metadata = {}
+    metadata_fn = getattr(model, "safe_metadata", None)
+    if callable(metadata_fn):
+        candidate = metadata_fn()
+        if isinstance(candidate, dict):
+            safe_metadata = candidate
+
     method = Method(
         name="Schema-constrained research model proposal",
         kind=MethodKind.MODEL_REASONING,
@@ -197,6 +204,7 @@ def run_model_researcher(
             "can_modify_evidence": False,
             "repository_content_boundary": "untrusted_data_only",
             "output_schema": "ModelProposalOutput/v1",
+            "adapter_metadata": safe_metadata,
         },
         provenance=Provenance(
             created_by="researcher-harness-v1.6",
