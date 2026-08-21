@@ -88,3 +88,12 @@ or Finding.
 - Never persist API-key values. Persist only safe adapter metadata and request/response hashes.
 - Repository content remains untrusted data inside the user packet, never system instructions.
 - A valid HTTP/model response still creates only a `ResearchProposal`; it cannot create Validation or Finding state.
+
+
+## Evidence-request execution (V1.9)
+
+A model-authored `EVIDENCE_REQUEST` is not executable authority. It must first have a deterministic V1.7 `ProposalDecision=DEFER` with `EVIDENCE_REQUEST_REQUIRES_EXECUTOR`.
+
+V1.9 maps request text only to a closed local registry: source context, call-site search, symbol references, bounded interprocedural AST tracing, and guard analysis. There is no arbitrary shell, subprocess, network, target testing, repository write, or model-selected command path.
+
+Executor output is fact collection only and must be stored as `EvidenceRelation.NEUTRAL`. Do not convert executor output directly into a confirmed weakness or finding; re-run deterministic validation and independent criticism.

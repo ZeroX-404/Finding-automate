@@ -8,6 +8,7 @@ capabilities:
   reason: ALLOW
   repo:read: ALLOW
   scanner:static: ALLOW
+  evidence:collect: ALLOW
   sandbox:execute: ALLOW
 
   network:read: DENY

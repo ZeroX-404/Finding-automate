@@ -20,6 +20,7 @@ class Capability(StrEnum):
     SANDBOX_EXECUTE = "sandbox:execute"
     NETWORK_READ = "network:read"
     MODEL_INVOKE = "model:invoke"
+    EVIDENCE_COLLECT = "evidence:collect"
     TARGET_TEST = "target:test"
     REPO_WRITE = "repo:write"
     GIT_COMMIT = "git:commit"

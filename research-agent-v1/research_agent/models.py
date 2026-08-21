@@ -79,6 +79,7 @@ class MethodKind(StrEnum):
     TEST = "TEST"
     CRITIC_REVIEW = "CRITIC_REVIEW"
     PROPOSAL_GATE = "PROPOSAL_GATE"
+    EVIDENCE_EXECUTOR = "EVIDENCE_EXECUTOR"
 
 
 class ExperimentStatus(StrEnum):

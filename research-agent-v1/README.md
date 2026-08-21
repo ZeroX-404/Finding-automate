@@ -293,3 +293,40 @@ research-agent research-propose-compatible \
 V1.8 uses the Chat Completions compatibility surface and does not expose tool
 calling to the model. Model output remains a proposal and still requires the
 V1.7 promotion gate before it can affect durable hypothesis state.
+
+
+## V1.9 Evidence Request Executor
+
+V1.9 introduces a deterministic executor for `EVIDENCE_REQUEST` proposals that were explicitly deferred by the V1.7 proposal gate. The executor is intentionally not a shell and does not accept arbitrary commands from a model.
+
+Execution boundary:
+
+```text
+ResearchProposal (SEEK_EVIDENCE)
+        |
+ProposalDecision (DEFER)
+        |
+        v
+Evidence Request Executor
+        |
+        +-- closed operation registry
+        +-- repository scope check
+        +-- source snapshot check
+        +-- bounded Python AST parsing
+        +-- no network
+        +-- no shell/subprocess
+        +-- no repository writes
+        |
+        v
+Method -> Experiment -> Evidence (NEUTRAL)
+```
+
+Approved V1.9 operations are `SOURCE_CONTEXT`, `CALL_SITE_SEARCH`, `SYMBOL_REFERENCE_SEARCH`, `INTERPROCEDURAL_TRACE`, and `GUARD_ANALYSIS`. Unsupported natural-language requests are not mapped to a generic fallback.
+
+The executor only records syntactic facts. Its evidence is always `NEUTRAL`; it cannot create `Claim`, `Validation`, or `Finding`, and it cannot assert attacker control, exploitability, or safety. New evidence must flow back through validation and criticism before research state changes.
+
+Run the offline acceptance case:
+
+```bash
+research-agent executor-case --repo-commit "$(git rev-parse HEAD)"
+```

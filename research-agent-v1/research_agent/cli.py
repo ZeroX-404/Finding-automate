@@ -26,6 +26,8 @@ from .promotion_gate import PromotionGateError, run_proposal_gate
 from .promotion_case import run_promotion_acceptance_case
 from .compatible_case import run_compatible_acceptance_case
 from .runtime import RuntimeWorkspace
+from .evidence_executor import EvidenceExecutorError, run_evidence_request_executor
+from .executor_case import run_executor_acceptance_case
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -39,6 +41,7 @@ DEFAULT_CRITIC_DB = str(DEFAULT_RUNTIME.db("critic.db"))
 DEFAULT_RESEARCHER_DB = str(DEFAULT_RUNTIME.db("researcher.db"))
 DEFAULT_PROMOTION_DB = str(DEFAULT_RUNTIME.db("promotion.db"))
 DEFAULT_COMPATIBLE_DB = str(DEFAULT_RUNTIME.db("compatible.db"))
+DEFAULT_EXECUTOR_DB = str(DEFAULT_RUNTIME.db("executor.db"))
 
 
 @app.command("init-db")
@@ -390,6 +393,7 @@ def runtime_info() -> None:
             "researcher": DEFAULT_RESEARCHER_DB,
             "promotion": DEFAULT_PROMOTION_DB,
             "compatible": DEFAULT_COMPATIBLE_DB,
+            "executor": DEFAULT_EXECUTOR_DB,
         },
     }
     typer.echo(json.dumps(result, indent=2))
@@ -490,6 +494,74 @@ def compatible_case(
 
     typer.echo(json.dumps(result, indent=2))
 
+    if (
+        not result["all_expected"]
+        or result["prohibited_objects"]
+        or not result["audit"]["ok"]
+    ):
+        raise typer.Exit(code=1)
+
+
+
+@app.command("execute-evidence-request")
+def execute_evidence_request(
+    proposal_id: str,
+    repo_root: str,
+    db: str = DEFAULT_EVIDENCE_DB,
+    policy_path: str = str(DEFAULT_POLICY_PATH),
+    repo_commit: str | None = None,
+) -> None:
+    """Execute one deferred evidence request through the bounded V1.9 registry."""
+    ledger = Ledger(db)
+    try:
+        policy = ScopePolicy.load(policy_path)
+        result = run_evidence_request_executor(
+            ledger,
+            proposal_id,
+            repo_root,
+            policy=policy,
+            repo_commit=repo_commit,
+        )
+    except (
+        FileNotFoundError,
+        PermissionError,
+        EvidenceExecutorError,
+        ValueError,
+    ) as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1)
+    typer.echo(json.dumps(result, indent=2))
+
+
+@app.command("executor-case")
+def executor_case(
+    db: str = DEFAULT_EXECUTOR_DB,
+    policy_path: str = str(DEFAULT_POLICY_PATH),
+    repo_commit: str | None = None,
+) -> None:
+    """Run V1.9 evidence-request executor acceptance using local AST operations only."""
+    repo_root = PROJECT_ROOT / "targets" / "contextual_validator_cases"
+    semgrep_json = repo_root / "signals.json"
+    ledger = Ledger(db)
+    try:
+        policy = ScopePolicy.load(policy_path)
+        result = run_executor_acceptance_case(
+            ledger,
+            repo_root,
+            semgrep_json,
+            policy=policy,
+            repo_commit=repo_commit,
+        )
+    except (
+        FileNotFoundError,
+        PermissionError,
+        EvidenceExecutorError,
+        RuntimeError,
+        ValueError,
+    ) as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1)
+    typer.echo(json.dumps(result, indent=2))
     if (
         not result["all_expected"]
         or result["prohibited_objects"]
