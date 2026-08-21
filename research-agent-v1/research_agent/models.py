@@ -133,6 +133,11 @@ class PromotionDecision(StrEnum):
     REJECT = "REJECT"
     DEFER = "DEFER"
 
+class OrchestratorStatus(StrEnum):
+    STARTED = "STARTED"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
 
 class Provenance(BaseModel):
     created_by: str
@@ -305,4 +310,32 @@ class Finding(BaseModel):
     cwe: str | None = None
     cve: str | None = None
     cvss_vector: str | None = None
+    provenance: Provenance
+
+
+
+
+class OrchestratorEvent(BaseModel):
+    id: str = Field(
+        default_factory=lambda: new_id("ORCH")
+    )
+
+    decision_id: str
+
+    agent_name: str
+
+    status: OrchestratorStatus
+
+    input_payload: dict[str, Any] = Field(
+        default_factory=dict
+    )
+
+    output_payload: dict[str, Any] = Field(
+        default_factory=dict
+    )
+
+    error: str | None = None
+
+    orchestrator_version: str = "2.2.2"
+
     provenance: Provenance

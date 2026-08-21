@@ -25,6 +25,7 @@ from .researcher_case import run_researcher_acceptance_case
 from .promotion_gate import PromotionGateError, run_proposal_gate
 from .promotion_case import run_promotion_acceptance_case
 from .compatible_case import run_compatible_acceptance_case
+from .state_case import run_state_acceptance_case
 from .runtime import RuntimeWorkspace
 from .evidence_executor import EvidenceExecutorError, run_evidence_request_executor
 from .executor_case import run_executor_acceptance_case
@@ -568,3 +569,28 @@ def executor_case(
         or not result["audit"]["ok"]
     ):
         raise typer.Exit(code=1)
+@app.command("state-case")
+def state_case():
+
+    result = run_state_acceptance_case()
+
+    typer.echo(
+        json.dumps(
+            result,
+            indent=2
+        )
+    )
+
+
+
+@app.command("state-case")
+def state_case():
+
+    result = run_state_acceptance_case()
+
+    typer.echo(
+        json.dumps(
+            result,
+            indent=2
+        )
+    )
