@@ -17,6 +17,10 @@ from research_agent.models import (
     AgentSelectionEvent,
 )
 
+from research_agent.state_mutation import StateMutationEngine
+from research_agent.state.decision import DecisionEngine
+from research_agent.state_transition import StateTransitionEngine
+
 
 class Orchestrator:
 
@@ -24,12 +28,27 @@ class Orchestrator:
         self,
         ledger=None,
         repo_commit: str | None = None,
+        state=None,
+        finding=None,
     ):
 
         self.ledger = ledger
         self.repo_commit = repo_commit
 
+        self.state = state
+        self.finding = finding
+
         self.router = AgentRouter()
+
+        self.state_mutator = StateMutationEngine(
+            ledger=ledger
+        )
+
+        self.decision_engine = DecisionEngine()
+
+        self.transition_engine = StateTransitionEngine(
+            ledger=ledger
+        )
 
 
     def dispatch(
@@ -101,6 +120,29 @@ class Orchestrator:
             result = agent.execute(
                 context
             )
+
+
+            if self.state:
+
+                self.state_mutator.apply_result(
+                    self.state,
+                    result,
+                    parent_ids=[]
+                )
+
+
+                next_action = self.decision_engine.decide(
+                    self.state
+                )
+
+
+                if self.finding:
+
+                    self.transition_engine.apply(
+                        self.finding,
+                        next_action,
+                    )
+
 
             if event and self.ledger:
 
