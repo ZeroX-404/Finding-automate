@@ -60,6 +60,7 @@ class EdgeRelation(StrEnum):
     DECIDES_ON = "DECIDES_ON"
     PROMOTES_TO = "PROMOTES_TO"
     ROUTES_TO = "ROUTES_TO"
+    WORKFLOW_OF = "WORKFLOW_OF"
 
 
 class SourceType(StrEnum):
@@ -354,5 +355,25 @@ class AgentSelectionEvent(BaseModel):
     action: str
 
     selected_agent: str
+
+    provenance: Provenance
+
+
+
+class WorkflowRun(BaseModel):
+
+    id: str = Field(
+        default_factory=lambda: new_id("WF")
+    )
+
+    decision_id: str
+
+    agent_name: str
+
+    status: str = "RUNNING"
+
+    state_id: str | None = None
+
+    orchestrator_event_id: str | None = None
 
     provenance: Provenance

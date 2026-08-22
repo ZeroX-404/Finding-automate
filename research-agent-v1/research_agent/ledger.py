@@ -252,6 +252,43 @@ class Ledger:
             for row in rows
         ]
 
+
+    def export_graph(self) -> dict:
+
+        with self.connect() as conn:
+
+            objects = [
+                dict(row)
+                for row in conn.execute(
+                    '''
+                    SELECT id, kind, payload_json, created_at
+                    FROM objects
+                    ORDER BY created_at
+                    '''
+                ).fetchall()
+            ]
+
+            edges = [
+                dict(row)
+                for row in conn.execute(
+                    '''
+                    SELECT source_id,
+                           relation,
+                           target_id,
+                           metadata_json,
+                           created_at
+                    FROM edges
+                    ORDER BY created_at
+                    '''
+                ).fetchall()
+            ]
+
+        return {
+            "objects": objects,
+            "edges": edges,
+        }
+
+
     def graph(self, object_id: str) -> dict:
         with self.connect() as conn:
             outgoing = conn.execute(
@@ -764,3 +801,36 @@ class Ledger:
             "objects": len(rows),
             "issues": issues,
         }
+
+
+def _export_graph(self):
+    with self.connect() as conn:
+
+        objects = [
+            dict(row)
+            for row in conn.execute(
+                """
+                SELECT id, kind, payload_json, created_at
+                FROM objects
+                ORDER BY created_at
+                """
+            ).fetchall()
+        ]
+
+
+        edges = [
+            dict(row)
+            for row in conn.execute(
+                """
+                SELECT source_id, relation, target_id, metadata_json, created_at
+                FROM edges
+                ORDER BY created_at
+                """
+            ).fetchall()
+        ]
+
+
+    return {
+        "objects": objects,
+        "edges": edges,
+    }
