@@ -14,6 +14,7 @@ from research_agent.models import (
     OrchestratorStatus,
     Provenance,
     EdgeRelation,
+    AgentSelectionEvent,
 )
 
 
@@ -37,13 +38,33 @@ class Orchestrator:
         context: dict,
     ):
 
+        decision_id = f"DEC-{uuid4().hex[:12]}"
+
         agent = self.router.resolve(
             decision.action
         )
 
 
+        selection_event = None
+
+        if self.ledger:
+
+            selection_event = AgentSelectionEvent(
+                decision_id=decision_id,
+                action=decision.action,
+                selected_agent=agent.__class__.__name__,
+                provenance=Provenance(
+                    created_by="orchestrator",
+                    repo_commit=self.repo_commit,
+                )
+            )
+
+            self.ledger.put(
+                selection_event
+            )
+
+
         event = None
-        decision_id = f"DEC-{uuid4().hex[:12]}"
 
         if self.ledger:
 
@@ -59,6 +80,13 @@ class Orchestrator:
             )
 
             self.ledger.put(event)
+
+            if selection_event:
+                self.ledger.add_edge(
+                    selection_event.id,
+                    EdgeRelation.ROUTES_TO,
+                    event.id,
+                )
 
             if decision.hypothesis_id:
                 self.ledger.add_edge(

@@ -59,6 +59,7 @@ class EdgeRelation(StrEnum):
     PROPOSES_FOR = "PROPOSES_FOR"
     DECIDES_ON = "DECIDES_ON"
     PROMOTES_TO = "PROMOTES_TO"
+    ROUTES_TO = "ROUTES_TO"
 
 
 class SourceType(StrEnum):
@@ -337,5 +338,21 @@ class OrchestratorEvent(BaseModel):
     error: str | None = None
 
     orchestrator_version: str = "2.2.2"
+
+    provenance: Provenance
+
+
+
+
+class AgentSelectionEvent(BaseModel):
+    id: str = Field(
+        default_factory=lambda: new_id("ASE")
+    )
+
+    decision_id: str
+
+    action: str
+
+    selected_agent: str
 
     provenance: Provenance
