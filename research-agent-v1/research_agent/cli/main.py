@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 
 from research_agent.platform import (
     AutonomousResearchPlatform,
@@ -25,6 +26,13 @@ from research_agent.research_proposal import (
 
 from research_agent.workflow_composer import (
     ResearchWorkflowComposer,
+)
+
+
+HISTORY_FILE = (
+    Path(".research-agent")
+    /
+    "sessions.json"
 )
 
 
@@ -52,6 +60,92 @@ def build_platform():
 
 
 
+def save_history(result):
+
+    HISTORY_FILE.parent.mkdir(
+        exist_ok=True
+    )
+
+    history = []
+
+    if HISTORY_FILE.exists():
+
+        history = json.loads(
+            HISTORY_FILE.read_text()
+        )
+
+
+    history.append(
+        result
+    )
+
+
+    HISTORY_FILE.write_text(
+        json.dumps(
+            history,
+            indent=2,
+        )
+    )
+
+
+
+def show_history():
+
+    if not HISTORY_FILE.exists():
+
+        print(
+            "No research history found."
+        )
+
+        return
+
+
+    history = json.loads(
+        HISTORY_FILE.read_text()
+    )
+
+
+    for item in history:
+
+        print("=" * 40)
+
+        print(
+            "SESSION:",
+            item.get(
+                "session_id"
+            )
+        )
+
+        print(
+            "Repository:",
+            item.get(
+                "repository"
+            )
+        )
+
+        print(
+            "Evidence:",
+            item.get(
+                "evidence"
+            )
+        )
+
+        print(
+            "Hypothesis:",
+            item.get(
+                "hypotheses"
+            )
+        )
+
+        print(
+            "Workflow:",
+            item.get(
+                "workflows"
+            )
+        )
+
+
+
 def main():
 
     parser = argparse.ArgumentParser(
@@ -68,7 +162,6 @@ def main():
         "scan"
     )
 
-
     scan.add_argument(
         "path"
     )
@@ -80,7 +173,13 @@ def main():
     )
 
 
+    sub.add_parser(
+        "history"
+    )
+
+
     args = parser.parse_args()
+
 
 
     if args.command == "scan":
@@ -89,12 +188,14 @@ def main():
 
 
         result = platform.research(
-
             repository=args.path,
-
             objective=
             "find security issues",
+        )
 
+
+        save_history(
+            result
         )
 
 
@@ -114,20 +215,31 @@ def main():
             )
 
             print(
-                f"Repository: {result['repository']}"
+                "Repository:",
+                result["repository"]
             )
 
             print(
-                f"Evidence: {result['evidence']}"
+                "Evidence:",
+                result["evidence"]
             )
 
             print(
-                f"Hypothesis: {result['hypotheses']}"
+                "Hypothesis:",
+                result["hypotheses"]
             )
 
             print(
-                f"Workflow: {result['workflows']}"
+                "Workflow:",
+                result["workflows"]
             )
+
+
+
+    elif args.command == "history":
+
+        show_history()
+
 
 
 if __name__ == "__main__":
