@@ -1,0 +1,27 @@
+ENGINE V2.4 ROUTER INTEGRATION
+
+Tambahkan import:
+
+from research_agent.agents.router import AgentRouter
+
+
+Di __init__ Orchestrator ganti:
+
+self.agents = {
+    "REQUEST_MORE_EVIDENCE": ResearcherAgent(),
+    "RUN_VALIDATION": CriticAgent(),
+    "PROMOTE_FINDING": CriticAgent(),
+}
+
+menjadi:
+
+self.router = AgentRouter()
+
+
+Di dispatch ganti lookup lama:
+
+agent = self.agents.get(decision.action)
+
+menjadi:
+
+agent = self.router.resolve(decision.action)

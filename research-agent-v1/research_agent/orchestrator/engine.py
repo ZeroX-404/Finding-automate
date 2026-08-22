@@ -7,6 +7,8 @@ from research_agent.agents import (
     CriticAgent,
 )
 
+from research_agent.agents.router import AgentRouter
+
 from research_agent.models import (
     OrchestratorEvent,
     OrchestratorStatus,
@@ -26,16 +28,7 @@ class Orchestrator:
         self.ledger = ledger
         self.repo_commit = repo_commit
 
-        self.agents = {
-            "REQUEST_MORE_EVIDENCE":
-                ResearcherAgent(),
-
-            "RUN_VALIDATION":
-                CriticAgent(),
-
-            "PROMOTE_FINDING":
-                CriticAgent(),
-        }
+        self.router = AgentRouter()
 
 
     def dispatch(
@@ -44,14 +37,9 @@ class Orchestrator:
         context: dict,
     ):
 
-        agent = self.agents.get(
+        agent = self.router.resolve(
             decision.action
         )
-
-        if agent is None:
-            raise ValueError(
-                f"No agent for {decision.action}"
-            )
 
 
         event = None
