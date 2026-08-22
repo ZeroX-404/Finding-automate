@@ -1,12 +1,6 @@
 from __future__ import annotations
 
 
-from research_agent.research_session import (
-    ResearchSession,
-)
-
-
-
 class AutonomousResearchPlatform:
 
 
@@ -43,8 +37,6 @@ class AutonomousResearchPlatform:
 
         self.memory = memory
 
-        self.sessions = []
-
 
 
     def research(
@@ -52,14 +44,6 @@ class AutonomousResearchPlatform:
         repository: str,
         objective: str,
     ):
-
-
-        session = ResearchSession()
-
-        self.sessions.append(
-            session
-        )
-
 
         trace = []
 
@@ -71,17 +55,6 @@ class AutonomousResearchPlatform:
 
             report = self.scanner.scan(
                 repository
-            )
-
-            session.record(
-                "REPOSITORY_SCANNED",
-                {
-                    "repository":
-                    repository,
-
-                    "files":
-                    report.files,
-                },
             )
 
             trace.append(
@@ -106,21 +79,6 @@ class AutonomousResearchPlatform:
                 )
             )
 
-
-            for item in evidence:
-
-                session.record(
-                    "EVIDENCE_CREATED",
-                    {
-                        "id":
-                        item.id,
-
-                        "source":
-                        item.source,
-                    },
-                )
-
-
             trace.append(
                 "EVIDENCE_GENERATED"
             )
@@ -134,29 +92,12 @@ class AutonomousResearchPlatform:
 
             for item in evidence:
 
-                hypothesis = (
+                hypotheses.append(
                     self.hypothesis_engine
                     .synthesize(
                         item
                     )
                 )
-
-                hypotheses.append(
-                    hypothesis
-                )
-
-
-                session.record(
-                    "HYPOTHESIS_CREATED",
-                    {
-                        "id":
-                        hypothesis.id,
-
-                        "statement":
-                        hypothesis.statement,
-                    },
-                )
-
 
             trace.append(
                 "HYPOTHESIS_CREATED"
@@ -171,7 +112,6 @@ class AutonomousResearchPlatform:
 
             for hypothesis in hypotheses:
 
-
                 proposal = (
                     self.proposal_generator
                     .generate(
@@ -182,25 +122,11 @@ class AutonomousResearchPlatform:
 
                 if self.workflow_composer:
 
-                    workflow = (
+                    workflows.append(
                         self.workflow_composer
                         .compose(
                             proposal
                         )
-                    )
-
-
-                    workflows.append(
-                        workflow
-                    )
-
-
-                    session.record(
-                        "WORKFLOW_CREATED",
-                        {
-                            "id":
-                            workflow.id,
-                        },
                     )
 
 
@@ -213,31 +139,25 @@ class AutonomousResearchPlatform:
         result = {
 
             "status":
-            "COMPLETED",
-
-            "session_id":
-            session.id,
+                "COMPLETED",
 
             "repository":
-            repository,
+                repository,
 
             "objective":
-            objective,
+                objective,
 
             "hypotheses":
-            len(hypotheses),
+                len(hypotheses),
 
             "evidence":
-            len(evidence),
+                len(evidence),
 
             "workflows":
-            len(workflows),
+                len(workflows),
 
             "trace":
-            trace,
-
-            "audit":
-            session.export(),
+                trace,
 
         }
 
